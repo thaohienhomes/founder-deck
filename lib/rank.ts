@@ -46,6 +46,7 @@ function hydrate(r: Row): RankedCard {
     lastBoostAt: r.last_boost_at ? new Date(r.last_boost_at as string) : null,
     state: String(r.state),
     isVerified: Boolean(r.is_verified),
+    claimFeeCents: Number(r.claim_fee_cents ?? 0),
     claimedAt: new Date(r.claimed_at as string),
     rank: Number(r.rank),
   };

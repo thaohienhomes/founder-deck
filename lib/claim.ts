@@ -14,6 +14,7 @@ export type PendingClaim = {
   websiteUrl: string;
   normalizedDomain: string;
   xHandle: string | null;
+  logoUrl: string | null;
   founderEmail: string | null;
   accent: string;
   claimIp: string | null;
@@ -66,6 +67,7 @@ export async function reserveClaimCheckout(pending: PendingClaim) {
         websiteUrl: pending.websiteUrl,
         normalizedDomain: pending.normalizedDomain,
         xHandle: pending.xHandle,
+        logoUrl: pending.logoUrl,
         founderEmail: pending.founderEmail,
         accent: pending.accent,
         ownerToken,
@@ -138,10 +140,10 @@ export async function fulfillClaim(checkoutId: string, orderId?: string) {
       inserted = asRows(
         await tx.execute(sql`
           insert into cards (season_id, claim_number, slug, product_name, tagline, category,
-            website_url, normalized_domain, x_handle, accent, founder_email, owner_token,
+            website_url, normalized_domain, x_handle, logo_url, accent, founder_email, owner_token,
             claim_ip, is_verified, claim_fee_cents, state)
           values (1, ${co.claim_number}, ${slug}, ${co.product_name}, ${co.tagline}, ${co.category},
-            ${co.website_url}, ${co.normalized_domain}, ${co.x_handle}, ${co.accent}, ${co.founder_email},
+            ${co.website_url}, ${co.normalized_domain}, ${co.x_handle}, ${co.logo_url}, ${co.accent}, ${co.founder_email},
             ${co.owner_token}, ${co.claim_ip}, ${co.is_verified}, ${co.fee_cents}, 'live')
           returning id, claim_number, slug
         `),

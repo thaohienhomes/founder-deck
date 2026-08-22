@@ -1,30 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { accentHex, monogram } from "@/lib/format";
 
-const CATEGORIES = [
-  "AI Tools", "Devtools", "SaaS", "Design", "Marketing",
-  "Productivity", "Creator", "Fintech", "Analytics", "Health",
-];
+type Preview = { productName: string; tagline: string; logoUrl: string | null; domain: string };
 
 export function ClaimForm({ nextNumber }: { nextNumber: number }) {
   const router = useRouter();
-  const [f, setF] = useState({
-    productName: "",
-    tagline: "",
-    category: "AI Tools",
-    websiteUrl: "",
-    xHandle: "",
-    email: "",
-  });
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dupSlug, setDupSlug] = useState<string | null>(null);
 
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setF((s) => ({ ...s, [k]: e.target.value }));
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => {
+    const url = websiteUrl.trim();
+    const valid = url.length >= 4 && url.includes(".");
+
+    const timer = setTimeout(async () => {
+      if (!valid) {
+        setPreview(null);
+        setPreviewLoading(false);
+        return;
+      }
+      setPreviewLoading(true);
+      try {
+        const res = await fetch(`/api/og-preview?url=${encodeURIComponent(url)}`);
+        if (!res.ok) throw new Error();
+        const data = (await res.json()) as Preview;
+        setPreview(data);
+      } catch {
+        setPreview(null);
+      } finally {
+        setPreviewLoading(false);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [websiteUrl]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +52,7 @@ export function ClaimForm({ nextNumber }: { nextNumber: number }) {
       const res = await fetch("/api/claim", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(f),
+        body: JSON.stringify({ websiteUrl, email }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -54,56 +71,27 @@ export function ClaimForm({ nextNumber }: { nextNumber: number }) {
     }
   }
 
-  const name = f.productName || "Your product";
-  const tagline = f.tagline || "One line about what it does";
+  const name = preview?.productName || "Your product";
+  const tagline = preview?.tagline || (previewLoading ? "Fetching your page…" : "One line about what it does");
   const hex = accentHex("amber");
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Product name" hint="Shown large on the card">
+        <Field label="Product URL" hint="One card per domain, per season">
           <input
-            required maxLength={40} value={f.productName} onChange={set("productName")}
-            placeholder="NovaLens"
-            className="w-full rounded-lg border bg-[var(--bg2)] px-3 py-2 text-[14px] outline-none focus:border-amber-500 hairline"
-          />
-        </Field>
-
-        <Field label="One-line pitch" hint={`${f.tagline.length}/90`}>
-          <input
-            required minLength={8} maxLength={90} value={f.tagline} onChange={set("tagline")}
-            placeholder="Turn any screenshot into an editable design file"
-            className="w-full rounded-lg border bg-[var(--bg2)] px-3 py-2 text-[14px] outline-none focus:border-amber-500 hairline"
-          />
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Category">
-            <select
-              value={f.category} onChange={set("category")}
-              className="w-full rounded-lg border bg-[var(--bg2)] px-3 py-2 text-[14px] outline-none focus:border-amber-500 hairline"
-            >
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-          <Field label="X handle" hint="optional">
-            <input
-              value={f.xHandle} onChange={set("xHandle")} placeholder="@novalens" maxLength={32}
-              className="w-full rounded-lg border bg-[var(--bg2)] px-3 py-2 text-[14px] outline-none focus:border-amber-500 hairline"
-            />
-          </Field>
-        </div>
-
-        <Field label="Website" hint="One card per domain, per season">
-          <input
-            required value={f.websiteUrl} onChange={set("websiteUrl")} placeholder="novalens.app"
+            required
+            autoFocus
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            placeholder="novalens.app"
             className="w-full rounded-lg border bg-[var(--bg2)] px-3 py-2 text-[14px] outline-none focus:border-amber-500 hairline"
           />
         </Field>
 
         <Field label="Email" hint="Only used to recover your card link">
           <input
-            type="email" value={f.email} onChange={set("email")} placeholder="you@product.com"
+            type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@product.com"
             className="w-full rounded-lg border bg-[var(--bg2)] px-3 py-2 text-[14px] outline-none focus:border-amber-500 hairline"
           />
         </Field>
@@ -127,8 +115,9 @@ export function ClaimForm({ nextNumber }: { nextNumber: number }) {
         </button>
 
         <p className="text-[12px] leading-relaxed text-[var(--fg2)]">
-          Claiming is free and permanent. Boosting is optional and paid. Your card stays in the deck
-          whatever happens to your rank — and it never gains resale or investment value.
+          We pull your product name, pitch, and logo straight from your site — nothing to type.
+          You can edit any of it after claiming with the link we give you. Claiming is free and
+          permanent. Boosting is optional and paid.
         </p>
       </form>
 
@@ -146,19 +135,24 @@ export function ClaimForm({ nextNumber }: { nextNumber: number }) {
           </div>
           <div className="flex flex-col gap-3 px-4 pt-4 pb-3">
             <div className="flex items-start gap-3">
-              <span className="num grid size-11 shrink-0 place-items-center rounded-lg text-[15px] font-semibold"
-                style={{ background: `${hex}1f`, color: hex, boxShadow: `inset 0 0 0 1px ${hex}33` }}>
-                {monogram(name)}
-              </span>
+              {preview?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={preview.logoUrl} alt="" width={44} height={44}
+                  className="size-11 shrink-0 rounded-lg object-cover"
+                  style={{ boxShadow: `inset 0 0 0 1px ${hex}33` }}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <span className="num grid size-11 shrink-0 place-items-center rounded-lg text-[15px] font-semibold"
+                  style={{ background: `${hex}1f`, color: hex, boxShadow: `inset 0 0 0 1px ${hex}33` }}>
+                  {monogram(name)}
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <h3 className="truncate text-[15px] font-semibold tracking-tight">{name}</h3>
                 <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-[var(--fg2)]">{tagline}</p>
               </div>
-            </div>
-            <div>
-              <span className="rounded border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.1em] text-[var(--fg2)] hairline">
-                {f.category}
-              </span>
             </div>
           </div>
           <div className="grid grid-cols-2 border-t hairline">

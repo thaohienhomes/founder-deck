@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BoostSheet } from "./BoostSheet";
+import { EditSheet } from "./EditSheet";
 import { fmtUsd } from "@/lib/packs";
 
 export function OwnerPanel(props: {
@@ -13,8 +14,14 @@ export function OwnerPanel(props: {
   gapToPassCents: number | null;
   aboveName: string | null;
   suggestion: { label: string; spend: number } | null;
+  productName: string;
+  tagline: string;
+  category: string;
+  logoUrl: string | null;
+  xHandle: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   return (
     <>
@@ -48,6 +55,12 @@ export function OwnerPanel(props: {
               ? `Boost — ${props.suggestion.label} takes the spot`
               : "Boost my card"}
           </button>
+          <button
+            onClick={() => setEditing(true)}
+            className="rounded-lg border px-4 py-2 text-[13px] text-[var(--fg2)] hover:text-[var(--fg)] hairline"
+          >
+            Edit details
+          </button>
           <a
             href={`/c/${props.slug}`}
             className="rounded-lg border px-4 py-2 text-[13px] text-[var(--fg2)] hover:text-[var(--fg)] hairline"
@@ -71,6 +84,19 @@ export function OwnerPanel(props: {
           ownerToken={props.ownerToken}
           gapToPassCents={props.gapToPassCents}
           onClose={() => setOpen(false)}
+        />
+      )}
+
+      {editing && (
+        <EditSheet
+          slug={props.slug}
+          ownerToken={props.ownerToken}
+          productName={props.productName}
+          tagline={props.tagline}
+          category={props.category}
+          logoUrl={props.logoUrl}
+          xHandle={props.xHandle}
+          onClose={() => setEditing(false)}
         />
       )}
     </>

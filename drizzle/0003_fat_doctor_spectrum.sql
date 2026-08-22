@@ -1,0 +1,1 @@
+ALTER TABLE "claim_checkouts" ADD COLUMN "logo_url" text;

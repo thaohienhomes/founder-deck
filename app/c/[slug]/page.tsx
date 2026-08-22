@@ -244,6 +244,11 @@ export default async function CardPage({
                 gapToPassCents={gap}
                 aboveName={above?.productName ?? null}
                 suggestion={suggestion}
+                productName={card.productName}
+                tagline={card.tagline}
+                category={card.category}
+                logoUrl={card.logoUrl}
+                xHandle={card.xHandle}
               />
             ) : above ? (
               <div className="rounded-xl border p-4 hairline">

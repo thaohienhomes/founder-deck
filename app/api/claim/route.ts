@@ -4,6 +4,8 @@ import { z } from "zod";
 
 import { db, asRows, claimCheckouts } from "@/lib/db";
 import { normalizeDomain } from "@/lib/format";
+import { fetchOgMeta } from "@/lib/og-fetch";
+import { deriveCardFields } from "@/lib/derive-card";
 import { claimTierForNumber, polarProductIdForTier } from "@/lib/economy";
 import { reserveClaimCheckout, markCheckoutFailed, getClaimCheckout, fulfillClaim } from "@/lib/claim";
 import { PAYMENTS_SIMULATED, createClaimCheckout } from "@/lib/polar";
@@ -11,19 +13,10 @@ import { PAYMENTS_SIMULATED, createClaimCheckout } from "@/lib/polar";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CATEGORIES = [
-  "AI Tools", "Devtools", "SaaS", "Design", "Marketing",
-  "Productivity", "Creator", "Fintech", "Analytics", "Health",
-];
-
 const ACCENTS = ["amber", "violet", "sky", "emerald", "rose"];
 
 const Body = z.object({
-  productName: z.string().trim().min(2).max(40),
-  tagline: z.string().trim().min(8).max(90),
-  category: z.string().refine((c) => CATEGORIES.includes(c), "Unknown category"),
   websiteUrl: z.string().trim().min(4).max(200),
-  xHandle: z.string().trim().max(32).optional().or(z.literal("")),
   email: z.string().trim().email().max(160).optional().or(z.literal("")),
 });
 
@@ -113,20 +106,22 @@ export async function POST(req: Request) {
     );
   }
 
-  const verified = await looksLive(websiteUrl);
+  const [verified, og] = await Promise.all([looksLive(websiteUrl), fetchOgMeta(websiteUrl)]);
+  const { productName, tagline, category, logoUrl } = deriveCardFields(og, domain);
   const accent = ACCENTS[Math.floor(Math.random() * ACCENTS.length)];
-  const handle = body.xHandle ? `@${body.xHandle.replace(/^@/, "")}` : null;
 
   // Reserves a claim number and writes a pending checkout. No card exists yet —
-  // the client names a product, never a price; the tier fee is resolved from
-  // whichever number this lands on.
+  // the product's own page names it, never the client; the tier fee is
+  // resolved from whichever number this lands on. The owner can correct or
+  // enrich any of these fields after payment via their owner token.
   const checkout = await reserveClaimCheckout({
-    productName: body.productName,
-    tagline: body.tagline,
-    category: body.category,
+    productName,
+    tagline,
+    category,
     websiteUrl,
     normalizedDomain: domain,
-    xHandle: handle,
+    xHandle: null,
+    logoUrl,
     founderEmail: body.email || null,
     accent,
     claimIp: ip,

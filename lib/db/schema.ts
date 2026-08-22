@@ -129,6 +129,7 @@ export const claimCheckouts = pgTable(
     websiteUrl: text("website_url").notNull(),
     normalizedDomain: text("normalized_domain").notNull(),
     xHandle: text("x_handle"),
+    logoUrl: text("logo_url"),
     founderEmail: text("founder_email"),
     accent: text("accent").notNull().default("amber"),
     ownerToken: text("owner_token").notNull(),

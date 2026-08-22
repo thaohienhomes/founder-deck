@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+/* Manual theme override wins; otherwise follow the OS. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --color-paper: #faf8f4;
+  --color-paper-2: #f3efe8;
+  --color-ink: #17150f;
+  --color-ink-2: #5d574b;
+  --color-rule: #ddd6c9;
+
+  --color-night: #0b0a09;
+  --color-night-2: #131110;
+  --color-chalk: #f2efe9;
+  --color-chalk-2: #a49d90;
+  --color-rule-dark: #2a2621;
+}
+
+:root {
+  color-scheme: light;
+  --bg: var(--color-paper);
+  --bg2: var(--color-paper-2);
+  --fg: var(--color-ink);
+  --fg2: var(--color-ink-2);
+  --rule: var(--color-rule);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: var(--color-night);
+  --bg2: var(--color-night-2);
+  --fg: var(--color-chalk);
+  --fg2: var(--color-chalk-2);
+  --rule: var(--color-rule-dark);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* the faint registry grid — texture, not decoration */
+.registry-bg {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--rule) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--rule) 45%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+}
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
+.hairline { border-color: var(--rule); }
+
+@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise-in { animation: rise-in .32s cubic-bezier(.2,.7,.3,1) both; }
+
+@keyframes tick { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: none; } }
+.tick-in { animation: tick .4s cubic-bezier(.2,.7,.3,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+::selection { background: #f59e0b33; }
